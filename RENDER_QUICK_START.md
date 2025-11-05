@@ -30,6 +30,9 @@ postgresql://ittoken_db_user:Xm98VVSZv7cMJkopkdWRkgvZzC7Aly42@dpg-d0visga4d50c73
 
 5. **Environment Variables** (нажмите Advanced):
 
+⚠️ **ВАЖНО**: Этот файл описывает деплой 2 сервисов (старый способ)  
+**Рекомендуется использовать:** `RENDER_ONE_SERVICE.md` (1 сервис, проще и дешевле)
+
 ```bash
 NODE_ENV=production
 PORT=5000

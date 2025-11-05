@@ -1,6 +1,13 @@
 const { Pool } = require('pg');
-const Database = require('better-sqlite3');
 const path = require('path');
+
+let Database;
+try {
+  Database = require('better-sqlite3');
+} catch (e) {
+  // better-sqlite3 не установлен (production с PostgreSQL)
+  Database = null;
+}
 
 let db;
 let isPostgres = false;
@@ -28,6 +35,10 @@ function initializeDatabase() {
     return db;
   } else {
     // SQLite for local development
+    if (!Database) {
+      throw new Error('SQLite (better-sqlite3) not available. Set DATABASE_URL for PostgreSQL or install better-sqlite3 for development.');
+    }
+    
     console.log('📊 Using SQLite database (development mode)');
     isPostgres = false;
     
