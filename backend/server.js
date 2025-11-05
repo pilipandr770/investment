@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const { runMigrations } = require('./database/migrations');
 
 dotenv.config();
@@ -12,7 +13,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/investments', require('./routes/investments'));
@@ -28,6 +29,17 @@ app.use('/uploads', express.static('uploads'));
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
+
+// Serve React frontend in production
+if (process.env.NODE_ENV === 'production') {
+  // Статические файлы React build
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+  
+  // Все остальные запросы отправляем на React (для React Router)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
