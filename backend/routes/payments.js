@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const db = require('../database/db');
+const { dbWrapper } = require('../database/db-adapter');
 const authMiddleware = require('../middleware/auth');
 
 // Для Stripe webhook потрібен express як залежність
@@ -41,18 +41,14 @@ const upload = multer({
 });
 
 // Отримання налаштувань платежів
-router.get('/settings', authMiddleware, (req, res) => {
+router.get('/settings', authMiddleware, async (req, res) => {
   try {
-    const settings = db.prepare(`
-      SELECT * FROM payment_settings WHERE is_active = 1
-    `).all();
+    const settings = await dbWrapper.all('SELECT * FROM payment_settings WHERE is_active = 1');
 
     // Додаємо повні URL для QR-кодів
     const settingsWithUrls = settings.map(setting => ({
       ...setting,
-      qr_code_url: setting.qr_code_path 
-        ? `http://localhost:5000/uploads/${path.basename(setting.qr_code_path)}`
-        : null
+      qr_code_url: setting.qr_code_path ? `http://localhost:5000/uploads/${path.basename(setting.qr_code_path)}` : null
     }));
 
     res.json(settingsWithUrls);
@@ -63,24 +59,17 @@ router.get('/settings', authMiddleware, (req, res) => {
 });
 
 // Створення запиту на поповнення (криптовалюта)
-router.post('/crypto/request', authMiddleware, upload.single('screenshot'), (req, res) => {
+router.post('/crypto/request', authMiddleware, upload.single('screenshot'), async (req, res) => {
   try {
     const { paymentMethod, amount, transactionHash } = req.body;
     const screenshotPath = req.file ? req.file.filename : null;
 
-    if (!paymentMethod || !amount || amount <= 0) {
-      return res.status(400).json({ error: 'Невірні дані' });
-    }
+    if (!paymentMethod || !amount || amount <= 0) return res.status(400).json({ error: 'Невірні дані' });
 
-    const result = db.prepare(`
-      INSERT INTO payment_requests (user_id, payment_method, amount, transaction_hash, screenshot_path, status)
-      VALUES (?, ?, ?, ?, ?, 'pending')
-    `).run(req.userId, paymentMethod, parseFloat(amount), transactionHash || null, screenshotPath);
+    const result = await dbWrapper.run('INSERT INTO payment_requests (user_id, payment_method, amount, transaction_hash, screenshot_path, status) VALUES (?, ?, ?, ?, ?, ?)', [req.userId, paymentMethod, parseFloat(amount), transactionHash || null, screenshotPath, 'pending']);
 
-    res.status(201).json({
-      message: 'Запит на поповнення створено. Очікуйте підтвердження.',
-      requestId: result.lastInsertRowid
-    });
+    const requestId = result.lastInsertRowid || result.lastID || result.insertId || (result.rows && result.rows[0] && result.rows[0].id);
+    res.status(201).json({ message: 'Запит на поповнення створено. Очікуйте підтвердження.', requestId });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Помилка сервера' });
@@ -88,18 +77,9 @@ router.post('/crypto/request', authMiddleware, upload.single('screenshot'), (req
 });
 
 // Отримання історії платежів користувача
-router.get('/history', authMiddleware, (req, res) => {
+router.get('/history', authMiddleware, async (req, res) => {
   try {
-    const payments = db.prepare(`
-      SELECT 
-        pr.*,
-        ps.payment_method as method_name
-      FROM payment_requests pr
-      LEFT JOIN payment_settings ps ON pr.payment_method = ps.payment_method
-      WHERE pr.user_id = ?
-      ORDER BY pr.created_at DESC
-    `).all(req.userId);
-
+    const payments = await dbWrapper.all('SELECT pr.*, ps.payment_method as method_name FROM payment_requests pr LEFT JOIN payment_settings ps ON pr.payment_method = ps.payment_method WHERE pr.user_id = ? ORDER BY pr.created_at DESC', [req.userId]);
     res.json(payments);
   } catch (error) {
     console.error(error);
@@ -164,17 +144,13 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
 
       if (userId && amount) {
         // Оновлюємо баланс користувача
-        const user = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
-        
+        const user = await dbWrapper.get('SELECT balance FROM users WHERE id = ?', [userId]);
         if (user) {
-          const newBalance = user.balance + amount;
-          db.prepare('UPDATE users SET balance = ? WHERE id = ?').run(newBalance, userId);
+          const newBalance = parseFloat(user.balance) + parseFloat(amount);
+          await dbWrapper.run('UPDATE users SET balance = ? WHERE id = ?', [newBalance, userId]);
 
           // Створюємо транзакцію
-          db.prepare(`
-            INSERT INTO transactions (user_id, type, amount, description)
-            VALUES (?, 'deposit', ?, ?)
-          `).run(userId, amount, `Поповнення через Stripe (Session: ${session.id})`);
+          await dbWrapper.run('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, ?, ?, ?)', [userId, 'deposit', amount, `Поповнення через Stripe (Session: ${session.id})`]);
 
           console.log(`✅ Stripe payment confirmed: User ${userId}, Amount ${amount} USD`);
         }

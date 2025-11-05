@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../database/db');
+const { dbWrapper } = require('../database/db-adapter');
 
 // Реєстрація
 router.post('/register', async (req, res) => {
@@ -15,7 +15,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Перевірка існування користувача
-    const existingUser = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    const existingUser = await dbWrapper.get('SELECT * FROM users WHERE email = ?', [email]);
     if (existingUser) {
       return res.status(400).json({ error: 'Користувач з таким email вже існує' });
     }
@@ -24,23 +24,18 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Створення користувача
-    const result = db.prepare(`
-      INSERT INTO users (email, password, full_name, phone)
-      VALUES (?, ?, ?, ?)
-    `).run(email, hashedPassword, fullName, phone || null);
-
-    // Генерація токена
-    const token = jwt.sign(
-      { userId: result.lastInsertRowid },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+    const insertRes = await dbWrapper.run(
+      `INSERT INTO users (email, password, full_name, phone) VALUES (?, ?, ?, ?)`,
+      [email, hashedPassword, fullName, phone || null]
     );
 
-    res.status(201).json({
-      message: 'Користувача успішно створено',
-      token,
-      userId: result.lastInsertRowid
-    });
+    // Normalize inserted id across SQLite/Postgres wrappers
+    const userId = insertRes.lastInsertRowid || insertRes.lastID || insertRes.insertId || (insertRes.rows && insertRes.rows[0] && insertRes.rows[0].id);
+
+    // Генерація токена
+    const token = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    res.status(201).json({ message: 'Користувача успішно створено', token, userId });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Помилка сервера' });
@@ -58,7 +53,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Пошук користувача
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    const user = await dbWrapper.get('SELECT * FROM users WHERE email = ?', [email]);
     if (!user) {
       return res.status(401).json({ error: 'Невірний email або пароль' });
     }

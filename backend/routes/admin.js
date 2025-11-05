@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database/db');
+const { dbWrapper } = require('../database/db-adapter');
 const authMiddleware = require('../middleware/auth');
 const adminAuthMiddleware = require('../middleware/adminAuth');
 
@@ -9,14 +9,9 @@ router.use(authMiddleware);
 router.use(adminAuthMiddleware);
 
 // Отримання всіх користувачів
-router.get('/users', (req, res) => {
+router.get('/users', async (req, res) => {
   try {
-    const users = db.prepare(`
-      SELECT id, email, full_name, phone, balance, role, created_at
-      FROM users
-      ORDER BY created_at DESC
-    `).all();
-
+    const users = await dbWrapper.all(`SELECT id, email, full_name, phone, balance, role, created_at FROM users ORDER BY created_at DESC`);
     res.json(users);
   } catch (error) {
     console.error(error);
@@ -25,13 +20,13 @@ router.get('/users', (req, res) => {
 });
 
 // Отримання статистики платформи
-router.get('/stats', (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
-    const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get();
-    const totalInvestments = db.prepare('SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total FROM user_investments').get();
-    const activeInvestments = db.prepare('SELECT COUNT(*) as count FROM user_investments WHERE status = ? OR status = ?').get('active', 'pending');
-    const products = db.prepare('SELECT COUNT(*) as count FROM investment_products').get();
-    
+    const totalUsers = await dbWrapper.get('SELECT COUNT(*) as count FROM users');
+    const totalInvestments = await dbWrapper.get('SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total FROM user_investments');
+    const activeInvestments = await dbWrapper.get('SELECT COUNT(*) as count FROM user_investments WHERE status = ? OR status = ?', ['active', 'pending']);
+    const products = await dbWrapper.get('SELECT COUNT(*) as count FROM investment_products');
+
     res.json({
       totalUsers: totalUsers.count,
       totalInvestments: totalInvestments.count,
@@ -46,7 +41,7 @@ router.get('/stats', (req, res) => {
 });
 
 // Створення нового інвестиційного продукту
-router.post('/products', (req, res) => {
+router.post('/products', async (req, res) => {
   try {
     console.log('=== CREATE PRODUCT ===');
     console.log('Request body:', req.body);
@@ -70,26 +65,15 @@ router.post('/products', (req, res) => {
     const activeStatus = is_active !== false ? 1 : 0;
     console.log('Creating product with active status:', activeStatus);
 
-    const result = db.prepare(`
-      INSERT INTO investment_products (name, description, min_investment, expected_return, duration_months, risk_level, category, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      name, 
-      description || '', 
-      min_investment, 
-      expected_return, 
-      duration_months, 
-      risk_level, 
-      category,
-      activeStatus
+    const result = await dbWrapper.run(
+      `INSERT INTO investment_products (name, description, min_investment, expected_return, duration_months, risk_level, category, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)` ,
+      [name, description || '', min_investment, expected_return, duration_months, risk_level, category, activeStatus]
     );
 
-    console.log('✅ Product created:', result.lastInsertRowid);
+    const productId = result.lastInsertRowid || result.lastID || result.insertId || (result.rows && result.rows[0] && result.rows[0].id);
+    console.log('✅ Product created:', productId);
 
-    res.status(201).json({
-      message: 'Продукт створено',
-      productId: result.lastInsertRowid
-    });
+    res.status(201).json({ message: 'Продукт створено', productId });
   } catch (error) {
     console.error('❌ Create error:', error);
     res.status(500).json({ error: 'Помилка сервера: ' + error.message });
@@ -97,7 +81,7 @@ router.post('/products', (req, res) => {
 });
 
 // Оновлення інвестиційного продукту
-router.put('/products/:id', (req, res) => {
+router.put('/products/:id', async (req, res) => {
   try {
     console.log('=== UPDATE PRODUCT ===');
     console.log('Product ID:', req.params.id);
@@ -136,35 +120,16 @@ router.put('/products/:id', (req, res) => {
       activeStatus
     });
 
-    const result = db.prepare(`
-      UPDATE investment_products
-      SET name = ?, description = ?, min_investment = ?, expected_return = ?, 
-          duration_months = ?, risk_level = ?, category = ?, is_active = ?
-      WHERE id = ?
-    `).run(
-      name, 
-      description || '', 
-      min_investment, 
-      expected_return, 
-      duration_months, 
-      risk_level, 
-      category, 
-      activeStatus, 
-      req.params.id
+    const result = await dbWrapper.run(
+      `UPDATE investment_products SET name = ?, description = ?, min_investment = ?, expected_return = ?, duration_months = ?, risk_level = ?, category = ?, is_active = ? WHERE id = ?`,
+      [name, description || '', min_investment, expected_return, duration_months, risk_level, category, activeStatus, req.params.id]
     );
 
-    console.log('Update result:', result);
-
-    if (result.changes === 0) {
-      console.error('No rows updated - product not found?');
-      return res.status(404).json({ error: 'Продукт не знайдено' });
-    }
+    const changes = result.changes || result.rowCount || 0;
+    if (changes === 0) return res.status(404).json({ error: 'Продукт не знайдено' });
 
     console.log('✅ Product updated successfully');
-    res.json({ 
-      message: 'Продукт оновлено',
-      changes: result.changes 
-    });
+    res.json({ message: 'Продукт оновлено', changes });
   } catch (error) {
     console.error('❌ Update error:', error);
     res.status(500).json({ error: 'Помилка сервера: ' + error.message });
@@ -172,12 +137,9 @@ router.put('/products/:id', (req, res) => {
 });
 
 // Видалення (деактивація) інвестиційного продукту
-router.delete('/products/:id', (req, res) => {
+router.delete('/products/:id', async (req, res) => {
   try {
-    db.prepare(`
-      UPDATE investment_products SET is_active = 0 WHERE id = ?
-    `).run(req.params.id);
-
+    await dbWrapper.run('UPDATE investment_products SET is_active = 0 WHERE id = ?', [req.params.id]);
     res.json({ message: 'Продукт деактивовано' });
   } catch (error) {
     console.error(error);
@@ -186,20 +148,9 @@ router.delete('/products/:id', (req, res) => {
 });
 
 // Отримання всіх інвестицій з інформацією про користувачів
-router.get('/investments', (req, res) => {
+router.get('/investments', async (req, res) => {
   try {
-    const investments = db.prepare(`
-      SELECT 
-        ui.*,
-        u.email as user_email,
-        u.full_name as user_name,
-        ip.name as product_name
-      FROM user_investments ui
-      JOIN users u ON ui.user_id = u.id
-      JOIN investment_products ip ON ui.product_id = ip.id
-      ORDER BY ui.start_date DESC
-    `).all();
-
+    const investments = await dbWrapper.all(`SELECT ui.*, u.email as user_email, u.full_name as user_name, ip.name as product_name FROM user_investments ui JOIN users u ON ui.user_id = u.id JOIN investment_products ip ON ui.product_id = ip.id ORDER BY ui.start_date DESC`);
     res.json(investments);
   } catch (error) {
     console.error(error);
@@ -208,7 +159,7 @@ router.get('/investments', (req, res) => {
 });
 
 // Зміна ролі користувача
-router.put('/users/:id/role', (req, res) => {
+router.put('/users/:id/role', async (req, res) => {
   try {
     const { role } = req.body;
 
@@ -216,10 +167,7 @@ router.put('/users/:id/role', (req, res) => {
       return res.status(400).json({ error: 'Невірна роль' });
     }
 
-    db.prepare(`
-      UPDATE users SET role = ? WHERE id = ?
-    `).run(role, req.params.id);
-
+    await dbWrapper.run('UPDATE users SET role = ? WHERE id = ?', [role, req.params.id]);
     res.json({ message: 'Роль користувача оновлено' });
   } catch (error) {
     console.error(error);
@@ -230,9 +178,9 @@ router.put('/users/:id/role', (req, res) => {
 // === ПЛАТІЖНІ НАЛАШТУВАННЯ ===
 
 // Отримання платіжних налаштувань
-router.get('/payment-settings', (req, res) => {
+router.get('/payment-settings', async (req, res) => {
   try {
-    const settings = db.prepare('SELECT * FROM payment_settings').all();
+    const settings = await dbWrapper.all('SELECT * FROM payment_settings');
     res.json(settings);
   } catch (error) {
     console.error(error);
@@ -241,16 +189,12 @@ router.get('/payment-settings', (req, res) => {
 });
 
 // Оновлення платіжних налаштувань
-router.put('/payment-settings/:method', (req, res) => {
+router.put('/payment-settings/:method', async (req, res) => {
   try {
     const { address, isActive } = req.body;
     const { method } = req.params;
 
-    db.prepare(`
-      UPDATE payment_settings
-      SET address = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE payment_method = ?
-    `).run(address, isActive ? 1 : 0, method);
+    await dbWrapper.run('UPDATE payment_settings SET address = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE payment_method = ?', [address, isActive ? 1 : 0, method]);
 
     res.json({ message: 'Налаштування оновлено' });
   } catch (error) {
@@ -294,7 +238,7 @@ const upload = multer({
   }
 });
 
-router.post('/payment-settings/:method/qr', upload.single('qrCode'), (req, res) => {
+router.post('/payment-settings/:method/qr', upload.single('qrCode'), async (req, res) => {
   try {
     const { method } = req.params;
     
@@ -303,7 +247,7 @@ router.post('/payment-settings/:method/qr', upload.single('qrCode'), (req, res) 
     }
 
     // Видалення старого QR-коду
-    const oldSetting = db.prepare('SELECT qr_code_path FROM payment_settings WHERE payment_method = ?').get(method);
+  const oldSetting = await dbWrapper.get('SELECT qr_code_path FROM payment_settings WHERE payment_method = ?', [method]);
     if (oldSetting && oldSetting.qr_code_path) {
       const oldPath = path.join(__dirname, '../uploads', oldSetting.qr_code_path);
       if (fs.existsSync(oldPath)) {
@@ -317,11 +261,7 @@ router.post('/payment-settings/:method/qr', upload.single('qrCode'), (req, res) 
     }
 
     // Збереження тільки імені файлу
-    db.prepare(`
-      UPDATE payment_settings
-      SET qr_code_path = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE payment_method = ?
-    `).run(req.file.filename, method);
+    await dbWrapper.run('UPDATE payment_settings SET qr_code_path = ?, updated_at = CURRENT_TIMESTAMP WHERE payment_method = ?', [req.file.filename, method]);
 
     console.log('QR-код збережено:', req.file.filename);
 
@@ -337,24 +277,9 @@ router.post('/payment-settings/:method/qr', upload.single('qrCode'), (req, res) 
 });
 
 // Отримання запитів на поповнення
-router.get('/payment-requests', (req, res) => {
+router.get('/payment-requests', async (req, res) => {
   try {
-    const requests = db.prepare(`
-      SELECT 
-        pr.*,
-        u.email as user_email,
-        u.full_name as user_name
-      FROM payment_requests pr
-      JOIN users u ON pr.user_id = u.id
-      ORDER BY 
-        CASE pr.status 
-          WHEN 'pending' THEN 1 
-          WHEN 'approved' THEN 2 
-          WHEN 'rejected' THEN 3 
-        END,
-        pr.created_at DESC
-    `).all();
-
+    const requests = await dbWrapper.all(`SELECT pr.*, u.email as user_email, u.full_name as user_name FROM payment_requests pr JOIN users u ON pr.user_id = u.id ORDER BY CASE pr.status WHEN 'pending' THEN 1 WHEN 'approved' THEN 2 WHEN 'rejected' THEN 3 END, pr.created_at DESC`);
     res.json(requests);
   } catch (error) {
     console.error(error);
@@ -363,40 +288,26 @@ router.get('/payment-requests', (req, res) => {
 });
 
 // Обробка запиту на поповнення
-router.put('/payment-requests/:id', (req, res) => {
+router.put('/payment-requests/:id', async (req, res) => {
   try {
     const { status, notes } = req.body;
     const requestId = req.params.id;
 
-    if (!['approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ error: 'Невірний статус' });
-    }
+    if (!['approved', 'rejected'].includes(status)) return res.status(400).json({ error: 'Невірний статус' });
 
     // Отримання інформації про запит
-    const request = db.prepare('SELECT * FROM payment_requests WHERE id = ?').get(requestId);
-    
-    if (!request) {
-      return res.status(404).json({ error: 'Запит не знайдено' });
-    }
+    const request = await dbWrapper.get('SELECT * FROM payment_requests WHERE id = ?', [requestId]);
+    if (!request) return res.status(404).json({ error: 'Запит не знайдено' });
 
     // Оновлення статусу запиту
-    db.prepare(`
-      UPDATE payment_requests
-      SET status = ?, notes = ?, processed_at = CURRENT_TIMESTAMP, processed_by = ?
-      WHERE id = ?
-    `).run(status, notes || null, req.userId, requestId);
+    await dbWrapper.run('UPDATE payment_requests SET status = ?, notes = ?, processed_at = CURRENT_TIMESTAMP, processed_by = ? WHERE id = ?', [status, notes || null, req.userId, requestId]);
 
     // Якщо схвалено - поповнюємо баланс
     if (status === 'approved') {
-      db.prepare(`
-        UPDATE users SET balance = balance + ? WHERE id = ?
-      `).run(request.amount, request.user_id);
+      await dbWrapper.run('UPDATE users SET balance = balance + ? WHERE id = ?', [request.amount, request.user_id]);
 
       // Запис транзакції
-      db.prepare(`
-        INSERT INTO transactions (user_id, type, amount, description)
-        VALUES (?, 'deposit', ?, ?)
-      `).run(request.user_id, request.amount, `Поповнення через ${request.payment_method}`);
+      await dbWrapper.run('INSERT INTO transactions (user_id, type, amount, description) VALUES (?, ?, ?, ?)', [request.user_id, 'deposit', request.amount, `Поповнення через ${request.payment_method}`]);
     }
 
     res.json({ message: 'Запит оброблено' });
@@ -409,14 +320,10 @@ router.put('/payment-requests/:id', (req, res) => {
 // ===== УПРАВЛІННЯ СОЦІАЛЬНИМИ МЕРЕЖАМИ =====
 
 // Отримання налаштувань соціальних мереж
-router.get('/social-links', (req, res) => {
+router.get('/social-links', async (req, res) => {
   try {
     console.log('=== GET SOCIAL LINKS ===');
-    
-    const links = db.prepare(`
-      SELECT * FROM social_links ORDER BY platform
-    `).all();
-
+    const links = await dbWrapper.all('SELECT * FROM social_links ORDER BY platform');
     console.log('✅ Social links:', links);
     res.json(links);
   } catch (error) {
@@ -426,7 +333,7 @@ router.get('/social-links', (req, res) => {
 });
 
 // Оновлення налаштувань соціальних мереж
-router.put('/social-links', (req, res) => {
+router.put('/social-links', async (req, res) => {
   try {
     console.log('=== UPDATE SOCIAL LINKS ===');
     console.log('Request body:', req.body);
@@ -441,17 +348,11 @@ router.put('/social-links', (req, res) => {
       telegram: telegram || { url: '', is_active: false }
     };
 
-    Object.entries(platforms).forEach(([platform, data]) => {
+    for (const [platform, data] of Object.entries(platforms)) {
       const activeStatus = data.is_active ? 1 : 0;
-      
-      db.prepare(`
-        UPDATE social_links
-        SET url = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE platform = ?
-      `).run(data.url || '', activeStatus, platform);
-
+      await dbWrapper.run('UPDATE social_links SET url = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE platform = ?', [data.url || '', activeStatus, platform]);
       console.log(`✅ Updated ${platform}:`, data.url, 'Active:', activeStatus);
-    });
+    }
 
     res.json({ message: 'Налаштування соціальних мереж оновлено' });
   } catch (error) {
