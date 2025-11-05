@@ -8,17 +8,21 @@ let isPostgres = false;
 // Initialize database based on environment
 function initializeDatabase() {
   const databaseUrl = process.env.DATABASE_URL;
+  const schemaName = process.env.DB_SCHEMA || 'investment';
   
   if (databaseUrl && databaseUrl.startsWith('postgres')) {
     // PostgreSQL for production (Render.com)
     console.log('📊 Connecting to PostgreSQL database...');
+    console.log(`📦 Using schema: ${schemaName}`);
     isPostgres = true;
     
     db = new Pool({
       connectionString: databaseUrl,
       ssl: process.env.NODE_ENV === 'production' ? {
         rejectUnauthorized: false
-      } : false
+      } : false,
+      // Set schema in connection
+      options: `-c search_path=${schemaName},public`
     });
     
     return db;

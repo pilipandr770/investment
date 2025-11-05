@@ -1,0 +1,105 @@
+# ============================================
+# RENDER.COM PRODUCTION ENVIRONMENT VARIABLES
+# ============================================
+# Скопируйте эти переменные в Render.com Dashboard
+# Settings → Environment → Add Environment Variable
+
+# ============================================
+# SERVER CONFIGURATION
+# ============================================
+NODE_ENV=production
+PORT=5000
+
+# ============================================
+# DATABASE CONFIGURATION (PostgreSQL на Render)
+# ============================================
+# Ваш PostgreSQL URL из Render
+DATABASE_URL=postgresql://ittoken_db_user:Xm98VVSZv7cMJkopkdWRkgvZzC7Aly42@dpg-d0visga4d50c73ekmu4g-a.frankfurt-postgres.render.com/ittoken_db
+
+# Название схемы для изоляции данных этого проекта
+DB_SCHEMA=investment
+
+# ============================================
+# JWT AUTHENTICATION
+# ============================================
+# Сгенерируйте случайную строку минимум 32 символа
+# Команда для генерации: openssl rand -base64 32
+JWT_SECRET=ЗАМЕНИТЕ_НА_СЛУЧАЙНУЮ_СТРОКУ_МИНИМУМ_32_СИМВОЛА
+
+# ============================================
+# STRIPE PAYMENT INTEGRATION
+# ============================================
+# Получите из: https://dashboard.stripe.com/test/apikeys
+STRIPE_SECRET_KEY=sk_test_YOUR_STRIPE_SECRET_KEY_HERE
+STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_STRIPE_PUBLISHABLE_KEY_HERE
+
+# ============================================
+# OPENAI API (для AI Assistant)
+# ============================================
+# Получите из: https://platform.openai.com/api-keys
+OPENAI_API_KEY=sk-YOUR_OPENAI_API_KEY_HERE
+
+# ============================================
+# CORS & URLs
+# ============================================
+# URL вашего frontend на Render (замените после создания)
+FRONTEND_URL=https://your-frontend-name.onrender.com
+
+# URL вашего backend на Render (замените после создания)
+BACKEND_URL=https://your-backend-name.onrender.com
+
+# ============================================
+# ИНСТРУКЦИЯ ПО НАСТРОЙКЕ НА RENDER.COM:
+# ============================================
+# 
+# 1. Backend Web Service:
+#    - Name: investment-backend
+#    - Root Directory: backend
+#    - Build Command: npm install
+#    - Start Command: node server.js
+#
+# 2. Добавьте эти переменные в Render Dashboard:
+#    Settings → Environment → Add Environment Variable
+#    
+#    Обязательные:
+#    ✅ NODE_ENV=production
+#    ✅ PORT=5000
+#    ✅ DATABASE_URL=postgresql://ittoken_db_user:Xm98VVSZv7cMJkopkdWRkgvZzC7Aly42@dpg-d0visga4d50c73ekmu4g-a.frankfurt-postgres.render.com/ittoken_db
+#    ✅ DB_SCHEMA=investment
+#    ✅ JWT_SECRET=[СГЕНЕРИРУЙТЕ СЛУЧАЙНУЮ СТРОКУ]
+#    ✅ STRIPE_SECRET_KEY=[ВАШ КЛЮЧ ИЗ STRIPE]
+#    ✅ STRIPE_PUBLISHABLE_KEY=[ВАШ КЛЮЧ ИЗ STRIPE]
+#    ✅ OPENAI_API_KEY=[ВАШ КЛЮЧ ИЗ OPENAI]
+#    ✅ FRONTEND_URL=https://your-frontend.onrender.com
+#    ✅ BACKEND_URL=https://your-backend.onrender.com
+#
+# 3. Frontend Static Site:
+#    - Name: investment-frontend
+#    - Root Directory: frontend
+#    - Build Command: npm install && npm run build
+#    - Publish Directory: build
+#    
+#    Environment Variables:
+#    ✅ REACT_APP_API_URL=https://your-backend.onrender.com/api
+#    ✅ REACT_APP_BACKEND_URL=https://your-backend.onrender.com
+#
+# 4. После деплоя:
+#    - Обновите FRONTEND_URL и BACKEND_URL на реальные URL
+#    - Проверьте здоровье: https://your-backend.onrender.com/api/health
+#    - Войдите в админку: admin@investment.com / admin123
+#    - СРАЗУ СМЕНИТЕ ПАРОЛЬ АДМИНА!
+#
+# ============================================
+# ГЕНЕРАЦИЯ СЛУЧАЙНЫХ КЛЮЧЕЙ:
+# ============================================
+#
+# JWT_SECRET (PowerShell):
+# -PasswordLength 32 -AsPlainText | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString
+#
+# JWT_SECRET (Bash/Linux):
+# openssl rand -base64 32
+#
+# JWT_SECRET (Node.js):
+# node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+#
+# ============================================

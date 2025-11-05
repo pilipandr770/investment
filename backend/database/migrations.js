@@ -7,6 +7,17 @@ async function runMigrations() {
   console.log('🔧 Running database migrations...');
   
   if (isPostgres()) {
+    // Create schema if specified
+    const schemaName = process.env.DB_SCHEMA || 'investment';
+    
+    console.log(`📦 Creating schema: ${schemaName}`);
+    await dbWrapper.exec(`
+      CREATE SCHEMA IF NOT EXISTS ${schemaName};
+      SET search_path TO ${schemaName}, public;
+    `);
+    
+    console.log(`✅ Using schema: ${schemaName}`);
+    
     // PostgreSQL schema
     await dbWrapper.exec(`
       CREATE TABLE IF NOT EXISTS users (
