@@ -51,8 +51,8 @@ function MyInvestments() {
 
   const getTotalStats = () => {
     const total = investments.reduce((acc, inv) => {
-      acc.invested += inv.amount;
-      acc.current += inv.current_value || inv.amount;
+      acc.invested += parseFloat(inv.amount) || 0;
+      acc.current += parseFloat(inv.current_value || inv.amount) || 0;
       return acc;
     }, { invested: 0, current: 0 });
     
