@@ -32,13 +32,21 @@ app.get('/api/health', (req, res) => {
 
 // Serve React frontend in production
 if (process.env.NODE_ENV === 'production') {
+  const frontendBuildPath = path.join(__dirname, '../frontend/build');
+  
+  console.log(`📁 Frontend build path: ${frontendBuildPath}`);
+  
   // Статические файлы React build
-  app.use(express.static(path.join(__dirname, '../frontend/build')));
+  app.use(express.static(frontendBuildPath));
   
   // Все остальные запросы отправляем на React (для React Router)
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+    const indexPath = path.join(frontendBuildPath, 'index.html');
+    console.log(`📄 Serving index.html from: ${indexPath}`);
+    res.sendFile(indexPath);
   });
+} else {
+  console.log('⚠️ Running in development mode - frontend should be served separately on port 3000');
 }
 
 // Error handling middleware
