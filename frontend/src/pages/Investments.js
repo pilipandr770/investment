@@ -83,7 +83,7 @@ function Investments() {
           </div>
           <div className="balance-info">
             <span>Доступний баланс:</span>
-            <strong>{balance.toFixed(2)} грн</strong>
+            <strong>{parseFloat(balance || 0).toFixed(2)} грн</strong>
           </div>
         </div>
 
@@ -149,7 +149,7 @@ function Investments() {
                     step="0.01"
                     placeholder={`Мінімум ${selectedProduct.min_investment} грн`}
                   />
-                  <small>Доступно: {balance.toFixed(2)} грн</small>
+                  <small>Доступно: {parseFloat(balance || 0).toFixed(2)} грн</small>
                 </div>
 
                 <div className="investment-preview">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Deposit.css';
 import { API_URL } from '../config/api';
+import { formatNumber } from '../utils/numbers';
 
 function Deposit() {
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -323,7 +324,7 @@ function Deposit() {
                       <tr key={payment.id}>
                         <td>{formatDate(payment.created_at)}</td>
                         <td>{payment.payment_method}</td>
-                        <td>${payment.amount.toFixed(2)}</td>
+                        <td>${formatNumber(payment.amount)}</td>
                         <td>
                           <span className={`status-badge ${statusInfo.class}`}>
                             {statusInfo.text}

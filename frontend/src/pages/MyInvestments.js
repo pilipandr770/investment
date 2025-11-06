@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { investmentAPI } from '../api/api';
+import { formatNumber } from '../utils/numbers';
 import './MyInvestments.css';
 
 function MyInvestments() {
@@ -115,7 +116,7 @@ function MyInvestments() {
                       </div>
                       <div className="investment-amount">
                         <span className="amount-label">Сума інвестиції</span>
-                        <span className="amount-value">{investment.amount.toFixed(2)} грн</span>
+                        <span className="amount-value">{formatNumber(investment.amount)} грн</span>
                       </div>
                     </div>
 

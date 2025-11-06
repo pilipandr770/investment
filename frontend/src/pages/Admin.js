@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Admin.css';
 import { API_URL, BACKEND_URL } from '../config/api';
+import { formatNumber } from '../utils/numbers';
 
 // Компонент для керування платежами
 function PaymentsManagement() {
@@ -248,7 +249,7 @@ function PaymentsManagement() {
                         </div>
                       </td>
                       <td>{getMethodName(request.payment_method)}</td>
-                      <td>${request.amount.toFixed(2)}</td>
+                      <td>${formatNumber(request.amount)}</td>
                       <td>{formatDate(request.created_at)}</td>
                       <td>
                         <span className={`status-badge status-${request.status}`}>
@@ -981,7 +982,7 @@ function Admin() {
                         <td>{user.full_name}</td>
                         <td>{user.email}</td>
                         <td>{user.phone || '-'}</td>
-                        <td>{user.balance.toFixed(2)} грн</td>
+                        <td>{parseFloat(user.balance || 0).toFixed(2)} грн</td>
                         <td>
                           <span className={`role-badge role-${user.role}`}>
                             {user.role === 'admin' ? '👑 Адмін' : '👤 Користувач'}
@@ -1042,7 +1043,7 @@ function Admin() {
                           </div>
                         </td>
                         <td>{inv.product_name}</td>
-                        <td>{inv.amount.toFixed(2)} грн</td>
+                        <td>{formatNumber(inv.amount)} грн</td>
                         <td>
                           <span className={`status-badge status-${inv.status}`}>
                             {inv.status === 'active' ? 'Активна' : inv.status}

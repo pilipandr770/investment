@@ -51,7 +51,7 @@ function Dashboard() {
             <div className="stat-icon">💰</div>
             <div className="stat-content">
               <h3>Баланс</h3>
-              <p className="stat-value">{profile.user.balance.toFixed(2)} грн</p>
+              <p className="stat-value">{parseFloat(profile.user.balance || 0).toFixed(2)} грн</p>
               <button 
                 className="btn btn-primary btn-sm" 
                 onClick={() => setShowBalanceForm(!showBalanceForm)}
