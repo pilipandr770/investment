@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userAPI } from '../api/api';
+import { formatNumber } from '../utils/numbers';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -65,7 +66,7 @@ function Dashboard() {
             <div className="stat-icon">📊</div>
             <div className="stat-content">
               <h3>Інвестовано</h3>
-              <p className="stat-value">{profile.stats.totalInvested.toFixed(2)} грн</p>
+              <p className="stat-value">{formatNumber(profile.stats.totalInvested)} грн</p>
               <p className="stat-label">{profile.stats.totalInvestments} інвестицій</p>
             </div>
           </div>
@@ -74,9 +75,9 @@ function Dashboard() {
             <div className="stat-icon">📈</div>
             <div className="stat-content">
               <h3>Поточна вартість</h3>
-              <p className="stat-value">{profile.stats.currentValue.toFixed(2)} грн</p>
-              <p className={`stat-label ${profile.stats.profit >= 0 ? 'profit' : 'loss'}`}>
-                {profile.stats.profit >= 0 ? '+' : ''}{profile.stats.profit.toFixed(2)} грн
+              <p className="stat-value">{formatNumber(profile.stats.currentValue)} грн</p>
+              <p className={`stat-label ${parseFloat(profile.stats.profit || 0) >= 0 ? 'profit' : 'loss'}`}>
+                {parseFloat(profile.stats.profit || 0) >= 0 ? '+' : ''}{formatNumber(profile.stats.profit)} грн
               </p>
             </div>
           </div>

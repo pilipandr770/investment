@@ -124,9 +124,9 @@ function Investments() {
               <button 
                 className="btn btn-primary btn-full"
                 onClick={() => setSelectedProduct(product)}
-                disabled={balance < product.min_investment}
+                disabled={parseFloat(balance) < parseFloat(product.min_investment)}
               >
-                {balance < product.min_investment ? 'Недостатньо коштів' : 'Інвестувати'}
+                {parseFloat(balance) < parseFloat(product.min_investment) ? 'Недостатньо коштів' : 'Інвестувати'}
               </button>
             </div>
           ))}
@@ -156,13 +156,13 @@ function Investments() {
                   <div className="preview-item">
                     <span>Очікуваний дохід:</span>
                     <strong className="profit">
-                      +{investAmount ? (parseFloat(investAmount) * selectedProduct.expected_return / 100).toFixed(2) : 0} грн
+                      +{investAmount ? (parseFloat(investAmount) * parseFloat(selectedProduct.expected_return) / 100).toFixed(2) : 0} грн
                     </strong>
                   </div>
                   <div className="preview-item">
                     <span>Загальна сума після закінчення:</span>
                     <strong>
-                      {investAmount ? (parseFloat(investAmount) * (1 + selectedProduct.expected_return / 100)).toFixed(2) : 0} грн
+                      {investAmount ? (parseFloat(investAmount) * (1 + parseFloat(selectedProduct.expected_return) / 100)).toFixed(2) : 0} грн
                     </strong>
                   </div>
                 </div>
