@@ -4,12 +4,14 @@
 - ❌ **Убрана ошибка:** "Cannot find module 'better-sqlite3'"
 - ❌ **Исправлено:** "operator does not exist: boolean = integer"
 - ❌ **Исправлено:** "syntax error at end of input"
+- ❌ **Исправлено:** "column 'full_name' of relation 'users' does not exist"
 - ✅ **Все роуты переведены на PostgreSQL**
 - ✅ **SQL placeholders:** автоконвертация `?` → `$1, $2, $3`
 - ✅ **Boolean типы:** замена `1/0` на `TRUE/FALSE`
+- ✅ **PostgreSQL схема:** все таблицы и колонки соответствуют коду
 - ✅ **Single-service deployment** (backend обслуживает frontend)
 - ✅ **Автоматические миграции базы данных**
-- ✅ **Коммит:** `2cfe95d` (или новее)
+- ✅ **Коммит:** `c56e5ef` (schema fixes) + `25737ed` (docs)
 
 ---
 
@@ -58,7 +60,10 @@ PORT=10000
 ❌ Cannot find module 'better-sqlite3'
 ❌ operator does not exist: boolean = integer
 ❌ syntax error at end of input
+❌ column 'full_name' of relation 'users' does not exist
 ```
+
+> 💡 **Если увидели ошибку схемы:** См. `FIX_POSTGRES_SCHEMA.md` - возможно нужно пересоздать БД
 
 ---
 
