@@ -2,10 +2,14 @@
 
 ## ✅ ЧТО ИСПРАВЛЕНО
 - ❌ **Убрана ошибка:** "Cannot find module 'better-sqlite3'"
+- ❌ **Исправлено:** "operator does not exist: boolean = integer"
+- ❌ **Исправлено:** "syntax error at end of input"
 - ✅ **Все роуты переведены на PostgreSQL**
+- ✅ **SQL placeholders:** автоконвертация `?` → `$1, $2, $3`
+- ✅ **Boolean типы:** замена `1/0` на `TRUE/FALSE`
 - ✅ **Single-service deployment** (backend обслуживает frontend)
 - ✅ **Автоматические миграции базы данных**
-- ✅ **Коммит:** `5b3b7a6` (или новее)
+- ✅ **Коммит:** `2cfe95d` (или новее)
 
 ---
 
@@ -40,17 +44,20 @@ PORT=10000
 ### 5️⃣ Deploy и проверьте логи:
 **Должно быть:**
 ```
-✅ Извлечение коммита 5b3b7a6
+✅ Извлечение коммита 2cfe95d (или новее)
 ✅ Успешная 🎉 сборка
 ✅ 🔧 Running database migrations...
 ✅ 📦 Creating schema: investment
 ✅ ✅ Database migrations completed successfully!
 ✅ 🚀 Server is running on port 10000
+✅ Ваш сервис работает 🎉
 ```
 
 **НЕ должно быть:**
 ```
 ❌ Cannot find module 'better-sqlite3'
+❌ operator does not exist: boolean = integer
+❌ syntax error at end of input
 ```
 
 ---
