@@ -70,6 +70,11 @@ router.post('/balance/add', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Невірна сума' });
     }
 
+    // Перевірка на переповнення DECIMAL(15,2) - максимум 9,999,999,999,999.99
+    if (amount > 9999999999999.99) {
+      return res.status(400).json({ error: 'Сума занадто велика' });
+    }
+
     await dbWrapper.run(`UPDATE users SET balance = balance + ? WHERE id = ?`, [amount, req.userId]);
 
     // Запис транзакції

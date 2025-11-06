@@ -31,14 +31,14 @@ async function runMigrations() {
         full_name VARCHAR(255) NOT NULL,
         phone VARCHAR(50),
         role VARCHAR(50) DEFAULT 'user',
-        balance DECIMAL(10,2) DEFAULT 0,
+        balance DECIMAL(15,2) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE TABLE IF NOT EXISTS deposits (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
-        amount DECIMAL(10,2) NOT NULL,
+        amount DECIMAL(15,2) NOT NULL,
         payment_method VARCHAR(50),
         status VARCHAR(50) DEFAULT 'pending',
         transaction_id VARCHAR(255),
@@ -49,7 +49,7 @@ async function runMigrations() {
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
-        min_investment DECIMAL(10,2) NOT NULL,
+        min_investment DECIMAL(15,2) NOT NULL,
         expected_return DECIMAL(5,2) NOT NULL,
         duration_months INTEGER NOT NULL,
         risk_level VARCHAR(50) NOT NULL,
@@ -62,18 +62,18 @@ async function runMigrations() {
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
         product_id INTEGER REFERENCES investment_products(id),
-        amount DECIMAL(10,2) NOT NULL,
+        amount DECIMAL(15,2) NOT NULL,
         start_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         end_date TIMESTAMP,
         status VARCHAR(50) DEFAULT 'active',
-        current_value DECIMAL(10,2)
+        current_value DECIMAL(15,2)
       );
 
       CREATE TABLE IF NOT EXISTS transactions (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
         type VARCHAR(50) NOT NULL,
-        amount DECIMAL(10,2) NOT NULL,
+        amount DECIMAL(15,2) NOT NULL,
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -82,7 +82,7 @@ async function runMigrations() {
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
         payment_method VARCHAR(50) NOT NULL,
-        amount DECIMAL(10,2) NOT NULL,
+        amount DECIMAL(15,2) NOT NULL,
         transaction_hash VARCHAR(255),
         screenshot_path VARCHAR(255),
         status VARCHAR(50) DEFAULT 'pending',
