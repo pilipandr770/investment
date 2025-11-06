@@ -50,13 +50,31 @@ function initializeDatabase() {
   }
 }
 
+// Convert SQLite ? placeholders to PostgreSQL $1, $2, $3 format
+function convertPlaceholders(sql) {
+  let index = 0;
+  return sql.replace(/\?/g, () => `$${++index}`);
+}
+
 // Wrapper functions to handle both SQLite and PostgreSQL
 const dbWrapper = {
   // Execute a query (no return value)
   async run(sql, params = []) {
     if (isPostgres) {
-      const result = await db.query(sql, params);
-      return { changes: result.rowCount, lastID: result.rows[0]?.id };
+      let pgSql = convertPlaceholders(sql);
+      
+      // Add RETURNING id for INSERT statements to get the inserted ID
+      if (pgSql.trim().toUpperCase().startsWith('INSERT') && !pgSql.toUpperCase().includes('RETURNING')) {
+        pgSql += ' RETURNING id';
+      }
+      
+      const result = await db.query(pgSql, params);
+      return { 
+        changes: result.rowCount, 
+        lastID: result.rows[0]?.id,
+        lastInsertRowid: result.rows[0]?.id,
+        rows: result.rows
+      };
     } else {
       const stmt = db.prepare(sql);
       return stmt.run(params);
@@ -66,7 +84,8 @@ const dbWrapper = {
   // Get a single row
   async get(sql, params = []) {
     if (isPostgres) {
-      const result = await db.query(sql, params);
+      const pgSql = convertPlaceholders(sql);
+      const result = await db.query(pgSql, params);
       return result.rows[0];
     } else {
       const stmt = db.prepare(sql);
@@ -77,7 +96,8 @@ const dbWrapper = {
   // Get multiple rows
   async all(sql, params = []) {
     if (isPostgres) {
-      const result = await db.query(sql, params);
+      const pgSql = convertPlaceholders(sql);
+      const result = await db.query(pgSql, params);
       return result.rows;
     } else {
       const stmt = db.prepare(sql);

@@ -62,7 +62,7 @@ router.post('/products', async (req, res) => {
       return res.status(400).json({ error: 'Заповніть всі обов\'язкові поля' });
     }
 
-    const activeStatus = is_active !== false ? 1 : 0;
+    const activeStatus = is_active !== false;
     console.log('Creating product with active status:', activeStatus);
 
     const result = await dbWrapper.run(
@@ -106,7 +106,7 @@ router.put('/products/:id', async (req, res) => {
     }
 
     // Підтримуємо обидва варіанти: isActive та is_active
-    const activeStatus = (isActive !== undefined ? isActive : is_active) ? 1 : 0;
+    const activeStatus = !!(isActive !== undefined ? isActive : is_active);
 
     console.log('Active status:', activeStatus);
     console.log('Updating product with:', {
@@ -139,7 +139,7 @@ router.put('/products/:id', async (req, res) => {
 // Видалення (деактивація) інвестиційного продукту
 router.delete('/products/:id', async (req, res) => {
   try {
-    await dbWrapper.run('UPDATE investment_products SET is_active = 0 WHERE id = ?', [req.params.id]);
+    await dbWrapper.run('UPDATE investment_products SET is_active = FALSE WHERE id = ?', [req.params.id]);
     res.json({ message: 'Продукт деактивовано' });
   } catch (error) {
     console.error(error);
@@ -194,7 +194,7 @@ router.put('/payment-settings/:method', async (req, res) => {
     const { address, isActive } = req.body;
     const { method } = req.params;
 
-    await dbWrapper.run('UPDATE payment_settings SET address = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE payment_method = ?', [address, isActive ? 1 : 0, method]);
+    await dbWrapper.run('UPDATE payment_settings SET address = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE payment_method = ?', [address, !!isActive, method]);
 
     res.json({ message: 'Налаштування оновлено' });
   } catch (error) {
@@ -349,7 +349,7 @@ router.put('/social-links', async (req, res) => {
     };
 
     for (const [platform, data] of Object.entries(platforms)) {
-      const activeStatus = data.is_active ? 1 : 0;
+      const activeStatus = !!data.is_active;
       await dbWrapper.run('UPDATE social_links SET url = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE platform = ?', [data.url || '', activeStatus, platform]);
       console.log(`✅ Updated ${platform}:`, data.url, 'Active:', activeStatus);
     }

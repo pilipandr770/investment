@@ -43,7 +43,7 @@ const upload = multer({
 // Отримання налаштувань платежів
 router.get('/settings', authMiddleware, async (req, res) => {
   try {
-    const settings = await dbWrapper.all('SELECT * FROM payment_settings WHERE is_active = 1');
+    const settings = await dbWrapper.all('SELECT * FROM payment_settings WHERE is_active = TRUE');
 
     // Додаємо повні URL для QR-кодів
     const settingsWithUrls = settings.map(setting => ({

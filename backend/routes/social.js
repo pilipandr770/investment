@@ -5,7 +5,7 @@ const { dbWrapper } = require('../database/db-adapter');
 // Отримання активних соціальних мереж (публічний endpoint)
 router.get('/', async (req, res) => {
   try {
-    const links = await dbWrapper.all(`SELECT platform, url FROM social_links WHERE is_active = 1 AND url != '' ORDER BY platform`);
+    const links = await dbWrapper.all(`SELECT platform, url FROM social_links WHERE is_active = TRUE AND url != '' ORDER BY platform`);
 
     // Перетворюємо масив в об'єкт для зручності
     const linksObj = {};

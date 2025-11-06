@@ -6,7 +6,7 @@ const authMiddleware = require('../middleware/auth');
 // Отримання всіх інвестиційних продуктів
 router.get('/', async (req, res) => {
   try {
-    const products = await dbWrapper.all(`SELECT * FROM investment_products WHERE is_active = 1 ORDER BY expected_return DESC`);
+    const products = await dbWrapper.all(`SELECT * FROM investment_products WHERE is_active = TRUE ORDER BY expected_return DESC`);
     res.json(products);
   } catch (error) {
     console.error(error);
@@ -41,7 +41,7 @@ router.post('/invest', authMiddleware, async (req, res) => {
     }
 
     // Перевірка продукту
-    const product = await dbWrapper.get('SELECT * FROM investment_products WHERE id = ? AND is_active = 1', [productId]);
+    const product = await dbWrapper.get('SELECT * FROM investment_products WHERE id = ? AND is_active = TRUE', [productId]);
 
     if (!product) {
       return res.status(404).json({ error: 'Продукт не знайдено' });
