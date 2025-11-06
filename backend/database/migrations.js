@@ -1,4 +1,5 @@
 const { initializeDatabase, dbWrapper, isPostgres } = require('./db-adapter');
+const { checkAndFixSchema } = require('./schema-fix');
 
 // Initialize database tables
 async function runMigrations() {
@@ -17,6 +18,9 @@ async function runMigrations() {
     `);
     
     console.log(`✅ Using schema: ${schemaName}`);
+    
+    // Проверяем и исправляем структуру схемы при необходимости
+    await checkAndFixSchema();
     
     // PostgreSQL schema
     await dbWrapper.exec(`
