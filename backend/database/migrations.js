@@ -253,6 +253,20 @@ async function insertTestData() {
         ['admin@investment.com', adminPassword, 'admin', 10000]
       );
       
+      // Insert payment methods (crypto only, no Stripe)
+      const paymentMethods = [
+        ['USDT', '', '', true],
+        ['Bitcoin', '', '', true],
+        ['Ethereum', '', '', true]
+      ];
+      
+      for (const method of paymentMethods) {
+        await dbWrapper.run(
+          'INSERT INTO payment_settings (method, wallet_address, qr_code_path, is_active) VALUES (?, ?, ?, ?)',
+          method
+        );
+      }
+      
       // Insert test products
       const products = [
         ['Консервативный', 'Низкий риск, стабильный доход', 8, 1000, 50000, 365, 'low', 'active'],

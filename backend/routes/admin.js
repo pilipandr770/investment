@@ -180,7 +180,7 @@ router.put('/users/:id/role', async (req, res) => {
 // Отримання платіжних налаштувань
 router.get('/payment-settings', async (req, res) => {
   try {
-    const settings = await dbWrapper.all('SELECT * FROM payment_settings');
+    const settings = await dbWrapper.all('SELECT id, method as payment_method, wallet_address as address, qr_code_path, is_active FROM payment_settings');
     res.json(settings);
   } catch (error) {
     console.error(error);
@@ -194,7 +194,7 @@ router.put('/payment-settings/:method', async (req, res) => {
     const { address, isActive } = req.body;
     const { method } = req.params;
 
-    await dbWrapper.run('UPDATE payment_settings SET address = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE payment_method = ?', [address, !!isActive, method]);
+    await dbWrapper.run('UPDATE payment_settings SET wallet_address = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE method = ?', [address, !!isActive, method]);
 
     res.json({ message: 'Налаштування оновлено' });
   } catch (error) {
@@ -247,7 +247,7 @@ router.post('/payment-settings/:method/qr', upload.single('qrCode'), async (req,
     }
 
     // Видалення старого QR-коду
-  const oldSetting = await dbWrapper.get('SELECT qr_code_path FROM payment_settings WHERE payment_method = ?', [method]);
+  const oldSetting = await dbWrapper.get('SELECT qr_code_path FROM payment_settings WHERE method = ?', [method]);
     if (oldSetting && oldSetting.qr_code_path) {
       const oldPath = path.join(__dirname, '../uploads', oldSetting.qr_code_path);
       if (fs.existsSync(oldPath)) {
@@ -261,7 +261,7 @@ router.post('/payment-settings/:method/qr', upload.single('qrCode'), async (req,
     }
 
     // Збереження тільки імені файлу
-    await dbWrapper.run('UPDATE payment_settings SET qr_code_path = ?, updated_at = CURRENT_TIMESTAMP WHERE payment_method = ?', [req.file.filename, method]);
+    await dbWrapper.run('UPDATE payment_settings SET qr_code_path = ?, updated_at = CURRENT_TIMESTAMP WHERE method = ?', [req.file.filename, method]);
 
     console.log('QR-код збережено:', req.file.filename);
 
