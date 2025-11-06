@@ -7,6 +7,11 @@ function Header() {
   const { token, user, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Логирование для отладки админки
+  console.log('🔍 Header - Current user:', user);
+  console.log('🔍 Header - User role:', user?.role);
+  console.log('🔍 Header - Is admin?', user?.role === 'admin');
+
   const handleLogout = () => {
     logout();
     navigate('/login');

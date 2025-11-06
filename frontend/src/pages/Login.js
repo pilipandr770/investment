@@ -28,6 +28,9 @@ function Login() {
 
     try {
       const response = await authAPI.login(formData);
+      console.log('🔐 Login response:', response.data);
+      console.log('🔐 User data:', response.data.user);
+      console.log('🔐 User role:', response.data.user?.role);
       login(response.data.token, response.data.user);
       navigate('/dashboard');
     } catch (err) {
