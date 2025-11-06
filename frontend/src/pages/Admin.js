@@ -629,7 +629,7 @@ function ProductsManagement({ products, setProducts, setError, setSuccess, loadD
                     )}
                   </td>
                   <td>{getCategoryLabel(product.category)}</td>
-                  <td>${product.min_investment.toLocaleString()}</td>
+                  <td>${parseFloat(product.min_investment || 0).toLocaleString()}</td>
                   <td style={{ color: '#27ae60', fontWeight: '600' }}>
                     {product.expected_return}% річних
                   </td>
