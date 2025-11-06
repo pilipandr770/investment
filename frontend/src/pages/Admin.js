@@ -939,7 +939,7 @@ function Admin() {
                 <div className="stat-icon">💰</div>
                 <div className="stat-info">
                   <h3>Інвестовано</h3>
-                  <p className="stat-value">{stats.totalInvestedAmount.toFixed(2)} грн</p>
+                  <p className="stat-value">{parseFloat(stats.totalInvestedAmount || 0).toFixed(2)} грн</p>
                 </div>
               </div>
               <div className="card stat-card">
