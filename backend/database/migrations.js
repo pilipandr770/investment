@@ -24,6 +24,8 @@ async function runMigrations() {
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
+        full_name VARCHAR(255) NOT NULL,
+        phone VARCHAR(50),
         role VARCHAR(50) DEFAULT 'user',
         balance DECIMAL(10,2) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -39,28 +41,51 @@ async function runMigrations() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS products (
+      CREATE TABLE IF NOT EXISTS investment_products (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
-        roi DECIMAL(5,2) NOT NULL,
         min_investment DECIMAL(10,2) NOT NULL,
-        max_investment DECIMAL(10,2),
-        duration_days INTEGER NOT NULL,
-        risk_level VARCHAR(50),
-        status VARCHAR(50) DEFAULT 'active',
+        expected_return DECIMAL(5,2) NOT NULL,
+        duration_months INTEGER NOT NULL,
+        risk_level VARCHAR(50) NOT NULL,
+        category VARCHAR(50) NOT NULL,
+        is_active BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS investments (
+      CREATE TABLE IF NOT EXISTS user_investments (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
-        product_id INTEGER REFERENCES products(id),
+        product_id INTEGER REFERENCES investment_products(id),
         amount DECIMAL(10,2) NOT NULL,
         start_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         end_date TIMESTAMP,
         status VARCHAR(50) DEFAULT 'active',
-        profit DECIMAL(10,2) DEFAULT 0
+        current_value DECIMAL(10,2)
+      );
+
+      CREATE TABLE IF NOT EXISTS transactions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        type VARCHAR(50) NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS payment_requests (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        payment_method VARCHAR(50) NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        transaction_hash VARCHAR(255),
+        screenshot_path VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pending',
+        notes TEXT,
+        processed_at TIMESTAMP,
+        processed_by INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE TABLE IF NOT EXISTS payment_settings (
@@ -98,10 +123,13 @@ async function runMigrations() {
       -- Create indexes for better performance
       CREATE INDEX IF NOT EXISTS idx_deposits_user_id ON deposits(user_id);
       CREATE INDEX IF NOT EXISTS idx_deposits_status ON deposits(status);
-      CREATE INDEX IF NOT EXISTS idx_investments_user_id ON investments(user_id);
-      CREATE INDEX IF NOT EXISTS idx_investments_status ON investments(status);
+      CREATE INDEX IF NOT EXISTS idx_user_investments_user_id ON user_investments(user_id);
+      CREATE INDEX IF NOT EXISTS idx_user_investments_status ON user_investments(status);
       CREATE INDEX IF NOT EXISTS idx_withdrawals_user_id ON withdrawals(user_id);
       CREATE INDEX IF NOT EXISTS idx_withdrawals_status ON withdrawals(status);
+      CREATE INDEX IF NOT EXISTS idx_payment_requests_user_id ON payment_requests(user_id);
+      CREATE INDEX IF NOT EXISTS idx_payment_requests_status ON payment_requests(status);
+      CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
     `);
   } else {
     // SQLite schema (development)
