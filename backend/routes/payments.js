@@ -79,7 +79,7 @@ router.post('/crypto/request', authMiddleware, upload.single('screenshot'), asyn
 // Отримання історії платежів користувача
 router.get('/history', authMiddleware, async (req, res) => {
   try {
-    const payments = await dbWrapper.all('SELECT pr.*, ps.name as method_name FROM payment_requests pr LEFT JOIN payment_settings ps ON pr.payment_method_id = ps.id WHERE pr.user_id = ? ORDER BY pr.created_at DESC', [req.userId]);
+    const payments = await dbWrapper.all('SELECT pr.* FROM payment_requests pr WHERE pr.user_id = ? ORDER BY pr.created_at DESC', [req.userId]);
     res.json(payments);
   } catch (error) {
     console.error(error);
